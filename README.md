@@ -5,7 +5,7 @@
 ```javascript
 
 // 建议放在router.js
-const schema = require('./libs/swaggerAndSchema')
+const schema = require('swagger-and-schema')
 
 schema({ 
     // 必须传入路由，用于生成swagger
@@ -13,7 +13,8 @@ schema({
     // 示例:CONFIG.host + ':' + CONFIG.port, 用于展示swagger.json和swagger的文档
     host: '0.0.0.0' + ':' + '4040',
     // 需要传入apis/xxx.json 的 文件夹 路径
-    apisDirPath: '',
+    // 正常情况下指向目录下的configs/apis
+    // apisDirPath: '',
 })
 
 

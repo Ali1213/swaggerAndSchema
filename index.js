@@ -176,7 +176,7 @@ function validate(params, actionName) {
 	let ajv = new Ajv()
 	let valid = ajv.validate(schemaCache[action], params)
 	let error
-	if(valid){
+	if(!valid){
 		error = JSON.stringify(ajv.errors)
 	}
 	return error
