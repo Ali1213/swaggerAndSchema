@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/Ali1213/swaggerAndSchema/issues"
   },
-  "homepage": "https://github.com/Ali1213/swaggerAndSchema#readme"
+  "homepage": "https://github.com/Ali1213/swaggerAndSchema#readme",
+  "dependencies": {
+    "ajv": "^6.5.2"
+  }
 }

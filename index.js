@@ -165,27 +165,21 @@ const startSwaggerReturnSchema = ({
 function validate(params, actionName) {
 	let action = actionName || params.Action
 	if(typeof action !== 'string'){
-		return {
-			valid: false,
-			error: 'Action not found',
-		}
+		return 'Action not found'
 	}
 
 	if(!schemaCache) throw Error('schema must be init')
 	if(!schemaCache[action]) {
-		return {
-			valid: false,
-			error: 'No Such Method',
-		}
+		return 'No Such Method'
 	}
 
 	let ajv = new Ajv()
 	let valid = ajv.validate(schemaCache[action], params)
-	let error = JSON.stringify(ajv.errors)
-	return {
-		valid,
-		error,
+	let error
+	if(valid){
+		error = JSON.stringify(ajv.errors)
 	}
+	return error
 }
 
 module.exports = startSwaggerReturnSchema
