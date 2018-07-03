@@ -159,37 +159,8 @@ const swaggerRouter = (args) => {
 const genValidate = ({
     apisDirPath = path.join(__dirname, '../../configs/apis'),
 } = {}) => {
-    validate.schema = genSchema({ apisDirPath })
-
-    return validate
-    function validate(params, actionName) {
-        let action = actionName || params.Action
-        if (typeof action !== 'string') {
-            return 'Action not found'
-        }
-
-        if (!schema) throw Error('schema must be init')
-        if (!schema[action]) {
-            return 'No Such Method'
-        }
-
-        let ajv = new Ajv()
-        let valid = ajv.validate(schema[action], params)
-        let error
-        if (!valid) {
-            error = JSON.stringify(ajv.errors)
-        }
-        return error
-    }
-}
-
-const genValidate = ({
-    apisDirPath = path.join(__dirname, '../../configs/apis'),
-} = {}) => {
-    const apiJsons = getAllJsonPathFromPath({ apisDirPath })
-    const schema = getSchemas({ apiJsons })
-    validate.schema = schema
-
+    const schema = genSchema({ apisDirPath })
+	validate.schema = schema
     return validate
     function validate(params, actionName) {
         let action = actionName || params.Action
