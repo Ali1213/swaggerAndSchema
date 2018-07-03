@@ -1,34 +1,52 @@
-# 快速开始
+## 安装
 
-引入项目
+```
+npm i swagger-and-schema --save
+```
+
+## 快速使用
+
+### 使用schema效验
 
 ```javascript
 
-// 建议放在router.js
-const schema = require('swagger-and-schema')
+const { genValidate } = require('swagger-and-schema')
 
-schema({ 
-    // 必须传入路由，用于生成swagger
-    router,
-    // 示例:CONFIG.host + ':' + CONFIG.port, 用于展示swagger.json和swagger的文档
-    host: '0.0.0.0' + ':' + '4040',
-    // 需要传入apis/xxx.json 的 文件夹 路径
-    // 正常情况下指向目录下的configs/apis
-    // apisDirPath: '',
-})
+const validate = genValidate()
 
-
-
-// schema 效验
-
-/* 
- * options 
- *      params 参数
- *      actionName? 默认使用params.Action
- * return {string| undefined}
- *      string 代表错误，未通过效验
- *      undefined 通过效验
- */
-const error = schema.validate(params, actionName)
+// error为null时表示效验通过，否则则为字符串
+const error = validate(params)
 
 ```
+
+### 获取schema
+
+```javascript
+
+// method 1
+const { genValidate } = require('swagger-and-schema')
+const schema = genValidate().schema
+
+// method 2
+const { genSchema } = require('swagger-and-schema')
+const schema = genSchema()
+
+```
+
+### 开启api文档
+
+```javascript
+
+const {
+	apiJsonRouter,
+	swaggerRouter,
+} = require('swagger-and-schema')
+
+const jsonPath = '/api-docs.json'
+// 生成 json 文件的路径
+router.get(jsonPath, apiJsonRouter(CONFIG.port))
+// 生成swaggerUI文件的路径
+router.get('/api-docs', swaggerRouter(jsonPath))
+```
+
+### api参数
