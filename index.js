@@ -4,19 +4,6 @@ const swaggerHTML = require('./swaggerHTML')
 const Ajv = require('ajv')
 
 
-const getAllJsonPathFromPath = function ({ apisDirPath } = {}) {
-    const filenames = fs.readdirSync(apisDirPath)
-    return filenames.map(filename => {
-        let content = require(path.join(apisDirPath, filename));
-        let name = content.name || path.basename(filename, path.extname(filename))
-        return {
-            content,
-            name,
-        }
-    })
-}
-
-
 
 function parseBody(body) {
     if (!Array.isArray(body.required)) {
@@ -30,13 +17,32 @@ function parseBody(body) {
     }
 }
 
+const getSchemas = ({ apiJsons } = {}) => {
+    return apiJsons.reduce((prev, apiJson) => {
+        prev[apiJson.name] = apiJson.content.body
+        return prev
+    }, {})
+}
+
+const getAllJsonPathFromPath = ({ apisDirPath } = {}) => {
+    const filenames = fs.readdirSync(apisDirPath)
+    return filenames.map(filename => {
+        let content = require(path.join(apisDirPath, filename));
+        let name = content.name || path.basename(filename, path.extname(filename))
+        return {
+            content,
+            name,
+        }
+    })
+}
+
 const apiJsonToSwaggerJson = function ({
-    swagger = '2.0',
-    version = '1.0.0',
-    title = 'hegui-backend',
-    description = 'hegui-backend后台API汇总',
-    schemes = ['http'],
-    host = 'localhost:4040',
+    swagger,
+    version,
+    title,
+    description,
+    schemes,
+    host,
     basePath = '',
     apiJsons,
 } = {}) {
@@ -82,118 +88,136 @@ const apiJsonToSwaggerJson = function ({
     return swaggerJson
 }
 
-
-// TODU 考虑 定义的模板 definitions 的情况
-const getSchemas = ({ apiJsons } = {}) => {
-    return apiJsons.reduce((prev, apiJson) => {
-        prev[apiJson.name] = apiJson.content.body
-        return prev
-    }, {})
-}
-
-const apiJsonRouter = (port) => {
-    if (typeof port == 'string') {
-        return apiJsonRouterInner({ port })
-    } else if (typeof port === 'object') {
-        return apiJsonRouterInner(port)
-    }else{
-        throw Error('Port must be a string or an Object')
+const _Validate = (params, actionName, schema) => {
+    let action = actionName || params.Action
+    if (typeof action !== 'string') {
+        return 'Action not found'
     }
+
+    if (!schema) throw Error('schema must be init')
+    if (!schema[action]) {
+        return 'No Such Method'
+    }
+
+    let ajv = new Ajv()
+    let valid = ajv.validate(schema[action], params)
+    let error
+    if (!valid) {
+        error = JSON.stringify(ajv.errors)
+    }
+    return error
 }
 
 
-const apiJsonRouterInner = ({
-    swagger = '2.0',
-    version = '1.0.0',
-    title = 'hegui-backend',
-    description = 'hegui-backend后台API汇总',
-    schemes = ['http'],
-    hostname,
-    port,
-    basePath = '/',
-    // 符合swagger标准的json文件生成的url path
-    apiJsonPath,
-    // swagger页面的 path
-    // swaggerPagePath = '/api-docs',
-    apisDirPath = path.join(__dirname, '../../configs/apis'),
-} = {}) => {
-    if (typeof port !== 'string') throw Error('Port must be a number')
-    return (req, res) => {
-        const options = {
-            swagger,
-            version,
-            title,
-            description,
-            schemes,
-            host: `${hostname || req.hostname}:${port}`,
-            basePath,
-            apiJsonPath: apiJsonPath || req.originalUrl,
-            apisDirPath,
-        }
-
-        options.apiJsons = getAllJsonPathFromPath(options)
-
-        options.swaggerJson = apiJsonToSwaggerJson(options)
-
-
+const _genApiJsonRouter = (swaggerJson) => {
+    return (_, res) => {
         res.setHeader('Content-Type', 'application/json')
-        res.send(JSON.stringify(options.swaggerJson))
+        res.send(JSON.stringify(swaggerJson))
     }
-
 }
 
-const swaggerRouter = (args) => {
-    let apiJsonPath
-    if (typeof args === 'string') {
-        apiJsonPath = args
-    } else {
-        ({ apiJsonPath } = args)
-    }
+const _genSwaggerRouter = (apiJsonPath) => {
     return (_, res) => {
         res.setHeader('Content-Type', 'text/html')
         res.send(swaggerHTML(apiJsonPath))
     }
 }
 
+class SwaggerAndSchema {
+    constructor({
+        swagger = '2.0',
+        version = '1.0.0',
+        title = 'hegui-backend',
+        description = 'hegui-backend后台API汇总',
+        schemes = ['http'],
+        hostname,
+        port,
+        basePath = '',
+        apiJsonPath,
+        apisDirPath = path.join(__dirname, '../../configs/apis'),
+    } = {}) {
 
-const genValidate = ({
-    apisDirPath = path.join(__dirname, '../../configs/apis'),
-} = {}) => {
-    const schema = genSchema({ apisDirPath })
-	validate.schema = schema
-    return validate
-    function validate(params, actionName) {
-        let action = actionName || params.Action
-        if (typeof action !== 'string') {
-            return 'Action not found'
+        this.m = {
+            swagger,
+            version,
+            title,
+            description,
+            schemes,
+            hostname,
+            port,
+            basePath,
+            apiJsonPath,
+            apisDirPath,
+            // 生成的apiJsons文件，同时用于生成swagger 和 schema效验
+            // apiJsons,
+            // 符合swagger规范的json文件
+            // swaggerJson,
+            // 符合schema效验的schema文件
+            // scheme
         }
 
-        if (!schema) throw Error('schema must be init')
-        if (!schema[action]) {
-            return 'No Such Method'
+        if(hostname && port){
+            this.m.host = `${hostname}:${port}`
         }
 
-        let ajv = new Ajv()
-        let valid = ajv.validate(schema[action], params)
-        let error
-        if (!valid) {
-            error = JSON.stringify(ajv.errors)
+    }
+    validate(
+        params,
+        actionName,
+        apisDirPath,
+    ) {
+        if(apisDirPath){
+            this.apisDirPath = apisDirPath
         }
-        return error
+
+        this.genSchema(apisDirPath)
+
+        return _Validate(params, actionName, this.m.scheme)
+    }
+
+    genApiJsons(){
+        if (!Array.isArray(this.m.apiJsons)) {
+            this.m.apiJsons = getAllJsonPathFromPath({ apisDirPath: this.m.apisDirPath })
+        }
+        return this.m.apiJsons
+    }
+    genSchema(){
+        if (typeof this.m.scheme !== 'object') {
+            const apiJsons = this.genApiJsons(this.m.apisDirPath)
+            this.m.scheme = getSchemas({ apiJsons })
+        }
+        return this.m.scheme
+    }
+    genApiJsonRouter(port){
+        if(typeof port === 'string'){
+            this.m.port = port
+            if(this.m.hostname){
+                this.m.host = `${this.m.hostname}:${port}`
+            }
+        }
+        if(typeof this.m.port!=='string'){
+            throw Error('Port must be a string or an Object')
+        }
+
+        if(typeof this.m.swaggerJson !== 'object'){
+            this.genApiJsons()
+            this.m.swaggerJson = apiJsonToSwaggerJson(this.m)
+        }
+        
+        return (req, res) => {
+            this.m.hostname = req.hostname
+			this.m.host = `${this.m.hostname}:${this.m.port}`
+			this.m.swaggerJson.host = this.m.host
+            res.setHeader('Content-Type', 'application/json')
+            res.send(JSON.stringify(this.m.swaggerJson))
+        }
+    }
+    genSwaggerRouter(apiJsonPath){
+        if(apiJsonPath){
+            this.m.apiJsonPath = apiJsonPath
+        }
+        return _genSwaggerRouter(this.m.apiJsonPath)
     }
 }
 
-
-const genSchema = ({
-    apisDirPath = path.join(__dirname, '../../configs/apis'),
-} = {}) => {
-    const apiJsons = getAllJsonPathFromPath({ apisDirPath })
-    const schema = getSchemas({ apiJsons })
-
-    return schema
-}
-
-module.exports.apiJsonRouter = apiJsonRouter
-module.exports.swaggerRouter = swaggerRouter
-module.exports.genValidate = genValidate
-module.exports.genSchema = genSchema
+module.exports = SwaggerAndSchema
