@@ -103,7 +103,7 @@ const _Validate = (params, actionName, schema) => {
     let valid = ajv.validate(schema[action], params)
     let error
     if (!valid) {
-        error = JSON.stringify(ajv.errors)
+        error = ajv.errors
     }
     return error
 }
