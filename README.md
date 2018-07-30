@@ -166,73 +166,80 @@ body里面，必须存在的字段是 properties
  * 路径目前是写死的
  * @author by ali.yu
 */
+/*
+ * 把原项目的apis文件夹内json转成 新的swagger的json格式
+ * 路径目前是写死的
+ * @author by ali.yu
+*/
 
-const fs = require('fs')
-const path = require('path')
+const fs = require('fs');
+const path = require('path');
 
 
 const getAllJsonPathFromPath = function (dirPath) {
-	const filenames = fs.readdirSync(dirPath)
+	const filenames = fs.readdirSync(dirPath);
 	return filenames.map(filename => ({
 		content: require(path.join(dirPath, filename)),
 		name: path.basename(filename, path.extname(filename)),
-	}))
-}
-const apiObj = getAllJsonPathFromPath(path.join(__dirname, '../configs/apis'))
+	}));
+};
+const apiObj = getAllJsonPathFromPath(path.join(__dirname, '../configs/apis'));
 
-
-
+fs.mkdirSync(path.join(__dirname, '../configs/apiDocs'));
 apiObj.forEach(({
-	content: {
-		tags,
-		summary = '',
-		description = '',
-		body,
-	}, name }) => {
-	let required = []
-	let properties = {}
+	content,
+	name,
+}) => {
+	let tags = content.tags,
+		summary = content.summary || '',
+		description = content.description || '',
+		body = content.input;
+
+	delete content.input;
+
+	const required = [];
+	const properties = {};
 	const result = {
+		...content,
 		tags,
 		summary,
 		description,
 		body: {
 			required,
 			properties,
-		}
-	}
+		},
+	};
 
-	body.forEach(item => {
+	body.forEach((item) => {
 		properties[item.name] = {
-		}
+		};
 		switch (item.type) {
-		case 'int':
-			properties[item.name].type = 'integer'
-			break
-		case 'array':
-			properties[item.name].type = 'array'
-			if(item.arrType === 'int') {
-				properties[item.name].items = {
-					type: 'integer'
-				} 
-			}else if(item.arrType === 'string'){
-				properties[item.name].items = {
-					type: 'string'
+			case 'int':
+				properties[item.name].type = 'integer';
+				break;
+			case 'array':
+				properties[item.name].type = 'array';
+				if (item.arrType === 'int') {
+					properties[item.name].items = {
+						type: 'integer',
+					};
+				} else if (item.arrType === 'string') {
+					properties[item.name].items = {
+						type: 'string',
+					};
 				}
-			}
-			break
-		case 'string':
-		default:
-			properties[item.name].type = 'string'
-
+				break;
+			case 'string':
+			default:
+				properties[item.name].type = 'string';
 		}
 
-		properties[item.name].description = item.description || ''
+		properties[item.name].description = item.description || '';
 		if (item.required) {
-			required.push(item.name)
+			required.push(item.name);
 		}
-	})
+	});
+	fs.writeFileSync(path.join(__dirname, '../configs/apiDocs', `${name}.json`), JSON.stringify(result, null, 2));
+});
 
-	fs.writeFileSync(path.join(__dirname, '../configs/apiDocs', name + '.json'), JSON.stringify(result, null, 2))
-
-})
 ```
