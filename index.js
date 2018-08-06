@@ -164,7 +164,7 @@ class SwaggerAndSchema {
     validate(
         params,
         actionName,
-        apisDirPath,
+        apisDirPath
     ) {
         if(apisDirPath){
             this.apisDirPath = apisDirPath

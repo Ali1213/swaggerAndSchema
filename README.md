@@ -20,8 +20,8 @@ var ss = new SwaggerAndSchema({
     // 如果符合目前项目目录设置，则不需要设置该值
 })
 
-// error为null时表示效验通过，否则则为字符串
-const error = ss.validate(params)
+// err为null时表示效验通过，否则则为数组，数组的每一项代表效验失败的结果
+const err = ss.validate(params)
 
 ```
 
@@ -33,6 +33,7 @@ const SwaggerAndSchema = require('swagger-and-schema')
 var ss = new SwaggerAndSchema({
     apisDirPath: 'xxx',
     // api.json所在地
+    // 示例: path.join(__dirname, 'configs/apis')
     // 如果符合目前项目目录设置，则不需要设置该值
 })
 
@@ -47,6 +48,7 @@ const SwaggerAndSchema = require('swagger-and-schema')
 var ss = new SwaggerAndSchema({
     apisDirPath: 'xxx',
     // api.json所在地
+    // 示例: path.join(__dirname, 'configs/apis')
     // 如果符合目前项目目录设置，则不需要设置该值
 })
 
