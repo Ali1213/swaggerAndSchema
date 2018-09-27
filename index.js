@@ -132,6 +132,7 @@ class SwaggerAndSchema {
         schemes = ['http'],
         hostname,
         port,
+        host,
         basePath = '',
         apiJsonPath,
         apisDirPath = path.join(__dirname, '../../configs/apis'),
@@ -144,6 +145,7 @@ class SwaggerAndSchema {
             description,
             schemes,
             hostname,
+            host,
             port,
             basePath,
             apiJsonPath,
@@ -156,8 +158,8 @@ class SwaggerAndSchema {
             // scheme
         }
 
-        if(hostname && port){
-            this.m.host = `${hostname}:${port}`
+        if (hostname) {
+            this.m.host = port ? `${hostname}:${port}` : hostname
         }
 
     }
@@ -166,7 +168,7 @@ class SwaggerAndSchema {
         actionName,
         apisDirPath
     ) {
-        if(apisDirPath){
+        if (apisDirPath) {
             this.apisDirPath = apisDirPath
         }
 
@@ -175,45 +177,40 @@ class SwaggerAndSchema {
         return _Validate(params, actionName, this.m.scheme)
     }
 
-    genApiJsons(){
+    genApiJsons() {
         if (!Array.isArray(this.m.apiJsons)) {
             this.m.apiJsons = getAllJsonPathFromPath({ apisDirPath: this.m.apisDirPath })
         }
         return this.m.apiJsons
     }
-    genSchema(){
+    genSchema() {
         if (typeof this.m.scheme !== 'object') {
             const apiJsons = this.genApiJsons(this.m.apisDirPath)
             this.m.scheme = getSchemas({ apiJsons })
         }
         return this.m.scheme
     }
-    genApiJsonRouter(port){
-        if(typeof port === 'string'){
+    genApiJsonRouter(port) {
+        if (/^\d+$/.test(port)) {
             this.m.port = port
-            if(this.m.hostname){
-                this.m.host = `${this.m.hostname}:${port}`
-            }
-        }
-        if(typeof this.m.port!=='string'){
-            throw Error('Port must be a string or an Object')
         }
 
-        if(typeof this.m.swaggerJson !== 'object'){
-            this.genApiJsons()
-            this.m.swaggerJson = apiJsonToSwaggerJson(this.m)
-        }
-        
         return (req, res) => {
-            this.m.hostname = req.hostname
-			this.m.host = `${this.m.hostname}:${this.m.port}`
-			this.m.swaggerJson.host = this.m.host
-            res.setHeader('Content-Type', 'application/json')
-            res.send(JSON.stringify(this.m.swaggerJson))
+            this.m.hostname = this.m.hostname || req.hostname
+            if (!this.m.host) {
+                this.m.host = this.m.port ? `${this.m.hostname}:${this.m.port}` : this.m.hostname
+            }
+
+            if (typeof this.m.swaggerJson !== 'object') {
+                this.genApiJsons()
+                this.m.swaggerJson = apiJsonToSwaggerJson(this.m)
+            }
+
+            res.json(this.m.swaggerJson)
         }
     }
-    genSwaggerRouter(apiJsonPath){
-        if(apiJsonPath){
+    genSwaggerRouter(apiJsonPath) {
+        if (apiJsonPath) {
             this.m.apiJsonPath = apiJsonPath
         }
         return _genSwaggerRouter(this.m.apiJsonPath)

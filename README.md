@@ -4,6 +4,12 @@
 npm i swagger-and-schema --save
 ```
 
+## 常见问题即解决方法
+
+1. 在正式环境中没有端口号的概念，路由不对
+    解决方法1： 在new new SwaggerAndSchema({host:xxx.com}), 
+    解决方法2： 在 router.get(apiJsonPath, ss.genApiJsonRouter(CONFIG.port)) 不传入 port 参数
+
 ## 快速使用
 
 
