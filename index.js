@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const swaggerHTML = require('./swaggerHTML');
 const Ajv = require('ajv');
+const yaml = require('js-yaml');
 
 /*
  * parse api.json
@@ -32,7 +33,18 @@ const getSchemas = ({ apiJsons } = {}) => {
 const getAllJsonPathFromPath = ({ apisDirPath } = {}) => {
     const filenames = fs.readdirSync(apisDirPath);
     return filenames.map((filename) => {
-        let content = require(path.join(apisDirPath, filename));
+        let content
+        let fileType = path.extname(filename)
+        let filepath = path.join(apisDirPath, filename)
+        if(fileType === '.json'){
+            content= require(filepath);
+        }else if( fileType === '.yaml'){
+            content = yaml.safeLoad(fs.readFileSync(filepath, 'utf8'));
+        }else {
+            content = {}
+        }
+        console.log(content)
+
         let name = content.name || path.basename(filename, path.extname(filename));
         return {
             content,
