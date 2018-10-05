@@ -1,10 +1,15 @@
-const fs = require('fs')
-const path = require('path')
-const swaggerHTML = require('./swaggerHTML')
-const Ajv = require('ajv')
+const fs = require('fs');
+const path = require('path');
+const swaggerHTML = require('./swaggerHTML');
+const Ajv = require('ajv');
 
-
-
+/*
+ * parse api.json
+ * @params { object } body
+ *
+ * @returns { object } r
+ * @returns { string }
+ */
 function parseBody(body) {
     if (!Array.isArray(body.required)) {
         body.required = [];
@@ -14,27 +19,27 @@ function parseBody(body) {
         name: 'body',
         required: true,
         schema: body,
-    }
+    };
 }
 
 const getSchemas = ({ apiJsons } = {}) => {
     return apiJsons.reduce((prev, apiJson) => {
-        prev[apiJson.name] = apiJson.content.body
-        return prev
-    }, {})
-}
+        prev[apiJson.name] = apiJson.content.body;
+        return prev;
+    }, {});
+};
 
 const getAllJsonPathFromPath = ({ apisDirPath } = {}) => {
-    const filenames = fs.readdirSync(apisDirPath)
-    return filenames.map(filename => {
+    const filenames = fs.readdirSync(apisDirPath);
+    return filenames.map((filename) => {
         let content = require(path.join(apisDirPath, filename));
-        let name = content.name || path.basename(filename, path.extname(filename))
+        let name = content.name || path.basename(filename, path.extname(filename));
         return {
             content,
             name,
-        }
-    })
-}
+        };
+    });
+};
 
 const apiJsonToSwaggerJson = function ({
     swagger,
@@ -56,15 +61,15 @@ const apiJsonToSwaggerJson = function ({
         schemes,
         host,
         basePath,
-    }
+    };
 
     let paths = apiJsons.reduce((prev, { content, name }) => {
-        // if(name !== 'GetBatchList') return prev
+        // default 'Components.json' is a model file
         if (name == 'Components') {
-            swaggerJson['Components'] = content
-            return prev
+            swaggerJson['Components'] = content;
+            return prev;
         }
-        let pathname = content.name || name
+        let pathname = content.name || name;
 
         prev[`?Action=${pathname}`] = {
             'post': {
@@ -73,55 +78,47 @@ const apiJsonToSwaggerJson = function ({
                 description: content.description || '',
                 consumes: ['application/json'],
                 produces: ['application/json'],
-                parameters: [parseBody(content.body)], //目前只支持body
+                parameters: [parseBody(content.body)], // 目前只支持body
                 responses: content.responses || {
                     200: {
-                        description: '请求成功'
-                    }
-                }
-            }
-        }
-        return prev
-    }, {})
+                        description: '请求成功',
+                    },
+                },
+            },
+        };
+        return prev;
+    }, {});
 
-    swaggerJson.paths = paths
-    return swaggerJson
-}
+    swaggerJson.paths = paths;
+    return swaggerJson;
+};
 
 const _Validate = (params, actionName, schema) => {
-    let action = actionName || params.Action
+    let action = actionName || params.Action;
     if (typeof action !== 'string') {
-        return 'Action not found'
+        return 'Action not found';
     }
 
-    if (!schema) throw Error('schema must be init')
+    if (!schema) throw Error('schema must be init');
     if (!schema[action]) {
-        return 'No Such Method'
+        return 'No Such Method';
     }
 
-    let ajv = new Ajv()
-    let valid = ajv.validate(schema[action], params)
-    let error
+    let ajv = new Ajv();
+    let valid = ajv.validate(schema[action], params);
+    let error;
     if (!valid) {
-        error = ajv.errors
+        error = ajv.errors;
     }
-    return error
-}
-
-
-const _genApiJsonRouter = (swaggerJson) => {
-    return (_, res) => {
-        res.setHeader('Content-Type', 'application/json')
-        res.send(JSON.stringify(swaggerJson))
-    }
-}
+    return error;
+};
 
 const _genSwaggerRouter = (apiJsonPath) => {
     return (_, res) => {
-        res.setHeader('Content-Type', 'text/html')
-        res.send(swaggerHTML(apiJsonPath))
-    }
-}
+        res.setHeader('Content-Type', 'text/html');
+        res.send(swaggerHTML(apiJsonPath));
+    };
+};
 
 class SwaggerAndSchema {
     constructor({
@@ -137,7 +134,6 @@ class SwaggerAndSchema {
         apiJsonPath,
         apisDirPath = path.join(__dirname, '../../configs/apis'),
     } = {}) {
-
         this.m = {
             swagger,
             version,
@@ -156,12 +152,11 @@ class SwaggerAndSchema {
             // swaggerJson,
             // 符合schema效验的schema文件
             // scheme
-        }
+        };
 
         if (hostname) {
-            this.m.host = port ? `${hostname}:${port}` : hostname
+            this.m.host = port ? `${hostname}:${port}` : hostname;
         }
-
     }
     validate(
         params,
@@ -169,52 +164,52 @@ class SwaggerAndSchema {
         apisDirPath
     ) {
         if (apisDirPath) {
-            this.apisDirPath = apisDirPath
+            this.apisDirPath = apisDirPath;
         }
 
-        this.genSchema(apisDirPath)
+        this.genSchema(apisDirPath);
 
-        return _Validate(params, actionName, this.m.scheme)
+        return _Validate(params, actionName, this.m.scheme);
     }
 
     genApiJsons() {
         if (!Array.isArray(this.m.apiJsons)) {
-            this.m.apiJsons = getAllJsonPathFromPath({ apisDirPath: this.m.apisDirPath })
+            this.m.apiJsons = getAllJsonPathFromPath({ apisDirPath: this.m.apisDirPath });
         }
-        return this.m.apiJsons
+        return this.m.apiJsons;
     }
     genSchema() {
         if (typeof this.m.scheme !== 'object') {
-            const apiJsons = this.genApiJsons(this.m.apisDirPath)
-            this.m.scheme = getSchemas({ apiJsons })
+            const apiJsons = this.genApiJsons(this.m.apisDirPath);
+            this.m.scheme = getSchemas({ apiJsons });
         }
-        return this.m.scheme
+        return this.m.scheme;
     }
     genApiJsonRouter(port) {
         if (/^\d+$/.test(port)) {
-            this.m.port = port
+            this.m.port = port;
         }
 
         return (req, res) => {
-            this.m.hostname = this.m.hostname || req.hostname
+            this.m.hostname = this.m.hostname || req.hostname;
             if (!this.m.host) {
-                this.m.host = this.m.port ? `${this.m.hostname}:${this.m.port}` : this.m.hostname
+                this.m.host = this.m.port ? `${this.m.hostname}:${this.m.port}` : this.m.hostname;
             }
 
             if (typeof this.m.swaggerJson !== 'object') {
-                this.genApiJsons()
-                this.m.swaggerJson = apiJsonToSwaggerJson(this.m)
+                this.genApiJsons();
+                this.m.swaggerJson = apiJsonToSwaggerJson(this.m);
             }
 
-            res.json(this.m.swaggerJson)
-        }
+            res.json(this.m.swaggerJson);
+        };
     }
     genSwaggerRouter(apiJsonPath) {
         if (apiJsonPath) {
-            this.m.apiJsonPath = apiJsonPath
+            this.m.apiJsonPath = apiJsonPath;
         }
-        return _genSwaggerRouter(this.m.apiJsonPath)
+        return _genSwaggerRouter(this.m.apiJsonPath);
     }
 }
 
-module.exports = SwaggerAndSchema
+module.exports = SwaggerAndSchema;

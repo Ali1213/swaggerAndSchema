@@ -18,5 +18,9 @@
   "homepage": "https://github.com/Ali1213/swaggerAndSchema#readme",
   "dependencies": {
     "ajv": "^6.5.2"
+  },
+  "devDependencies": {
+    "eslint": "^5.6.1",
+    "eslint-config-google": "^0.10.0"
   }
 }
