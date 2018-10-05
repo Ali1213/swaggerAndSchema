@@ -43,7 +43,6 @@ const getAllJsonPathFromPath = ({ apisDirPath } = {}) => {
         }else {
             content = {}
         }
-        console.log(content)
 
         let name = content.name || path.basename(filename, path.extname(filename));
         return {
