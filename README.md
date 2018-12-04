@@ -255,6 +255,11 @@ apiObj.forEach(({
 
 ## 更新
 
+### 2018.10.5 v1.4.0
+
++ 增加ts声明
++ hack一下，增加default属性
+
 ### 2018.10.5 v1.3.0
 
 + 支持yaml格式的api.json文档

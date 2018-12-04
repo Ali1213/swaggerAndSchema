@@ -224,3 +224,4 @@ class SwaggerAndSchema {
 }
 
 module.exports = SwaggerAndSchema;
+module.exports.default = SwaggerAndSchema;
