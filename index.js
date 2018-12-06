@@ -12,6 +12,7 @@ const yaml = require('js-yaml');
  * @returns { string }
  */
 function parseBody(body) {
+    if(!body) return undefined;
     if (!Array.isArray(body.required)) {
         body.required = [];
     }
