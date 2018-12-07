@@ -187,8 +187,6 @@ class SwaggerAndSchema {
 
         this.genSchema(apisDirPath);
 
-        setTimeout(()=> 
-        console.log(this.m.scheme),5000)
         return _Validate(params, actionName, this.m.scheme);
     }
 
