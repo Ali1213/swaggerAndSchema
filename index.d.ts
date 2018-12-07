@@ -30,7 +30,8 @@ declare class SwaggerAndSchema {
     m: cacheArgs;
     genApiJsonRouter(port?: string): router
     genSwaggerRouter(apiJsonPath?: string): router
-    validate(params:any,actionName: string, apisDirPath?: string): any
+    validate(params:any, actionName?: string, apisDirPath?: string): any
+    check(params:any, actionName?: string, apisDirPath?: string): string
 }
 
 

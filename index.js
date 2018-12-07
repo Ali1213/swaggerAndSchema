@@ -132,6 +132,26 @@ const _Validate = (params, actionName, schema) => {
     return error;
 };
 
+const _check = (params, actionName, schema) => {
+    let action = actionName || params.Action;
+    if (typeof action !== 'string') {
+        return 'Action not found';
+    }
+
+    if (!schema) throw Error('schema must be init');
+    if (!schema[action]) {
+        return 'No Such Method';
+    }
+
+    let ajv = new Ajv();
+    let valid = ajv.validate(schema[action], params);
+    let errorStr = '';
+    if (!valid) {
+        errorStr = ajv.errors.map(item => item.message || '').join(';');
+    }
+    return errorStr;
+};
+
 const _genSwaggerRouter = (apiJsonPath) => {
     return (_, res) => {
         res.setHeader('Content-Type', 'text/html');
@@ -188,6 +208,20 @@ class SwaggerAndSchema {
         this.genSchema(apisDirPath);
 
         return _Validate(params, actionName, this.m.scheme);
+    }
+
+    check(
+        params,
+        actionName,
+        apisDirPath
+    ) {
+        if (apisDirPath) {
+            this.apisDirPath = apisDirPath;
+        }
+
+        this.genSchema(apisDirPath);
+
+        return _check(params, actionName, this.m.scheme);
     }
 
     genApiJsons() {
