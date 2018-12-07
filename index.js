@@ -145,11 +145,11 @@ const _check = (params, actionName, schema) => {
 
     let ajv = new Ajv();
     let valid = ajv.validate(schema[action], params);
-    let errorStr = '';
+    let err;
     if (!valid) {
-        errorStr = ajv.errors.map(item => item.message || '').join(';');
+        err = ajv.errors.map(item => item.message || '').join(';');
     }
-    return errorStr;
+    return err;
 };
 
 const _genSwaggerRouter = (apiJsonPath) => {
