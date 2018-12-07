@@ -12,7 +12,11 @@ const yaml = require('js-yaml');
  * @returns { string }
  */
 function parseBody(body) {
-    if(!body) return undefined;
+    if(!body) return {
+        in: 'body',
+        name: 'body',
+        required: false,
+    };
     if (!Array.isArray(body.required)) {
         body.required = [];
     }
@@ -26,7 +30,10 @@ function parseBody(body) {
 
 const getSchemas = ({ apiJsons } = {}) => {
     return apiJsons.reduce((prev, apiJson) => {
-        prev[apiJson.name] = apiJson.content.body;
+        prev[apiJson.name] = apiJson.content.body || {
+            required: [],
+            properties: {},
+        };
         return prev;
     }, {});
 };
@@ -165,7 +172,6 @@ class SwaggerAndSchema {
             // 符合schema效验的schema文件
             // scheme
         };
-
         if (hostname) {
             this.m.host = port ? `${hostname}:${port}` : hostname;
         }
@@ -181,6 +187,8 @@ class SwaggerAndSchema {
 
         this.genSchema(apisDirPath);
 
+        setTimeout(()=> 
+        console.log(this.m.scheme),5000)
         return _Validate(params, actionName, this.m.scheme);
     }
 
