@@ -12,39 +12,27 @@ npm i swagger-and-schema --save
 
 ## 快速使用
 
-
-
 ### 使用schema效验
 
 ```javascript
 
 const SwaggerAndSchema = require('swagger-and-schema')
 
-var ss = new SwaggerAndSchema({
-    apisDirPath: 'xxx',
-    // api.json所在地
+const ss = new SwaggerAndSchema({
+    // api.json文件夹所在地
     // 如果符合目前项目目录设置，则不需要设置该值
+    apisDirPath: 'xxx',
 })
 
 // err为null时表示效验通过，否则则为数组，数组的每一项代表效验失败的结果
-const err = ss.validate(params)
+// const err = ss.validate(params) 
+
+// 推荐下列方法
+// @return {string | undefined} string代表错误提示，如果有多条，以;相连， undefined代表效验通过
+const err = ss.check(params)
 
 ```
 
-### 获取schema
-
-```javascript
-const SwaggerAndSchema = require('swagger-and-schema')
-
-var ss = new SwaggerAndSchema({
-    apisDirPath: 'xxx',
-    // api.json所在地
-    // 示例: path.join(__dirname, 'configs/apis')
-    // 如果符合目前项目目录设置，则不需要设置该值
-})
-
-const schema = ss.genSchema()
-```
 
 ### 开启api文档
 
@@ -160,7 +148,66 @@ body里面，必须存在的字段是 properties
 ```
 
 
-## 旧版本的schema 如何转换到新版本
+### 如果需要获取schema（暂时没有人需要这个需求）
+
+```javascript
+const SwaggerAndSchema = require('swagger-and-schema')
+
+const ss = new SwaggerAndSchema({
+    // api.json文件夹所在地
+    // 示例: path.join(__dirname, 'configs/apis')
+    // 如果符合目前项目目录设置，则不需要设置该值
+    apisDirPath: 'xxx',
+})
+
+const schema = ss.genSchema()
+```
+
+
+
+## 进阶
+
+### components
+
+目前版本代码是写死的,在`apis/Components.yaml` 或者是 `Components.json`文件中可以定义一些公共可复用的组件。
+
+举个例子：有很多借口的返回值只需要一个RetCode为0
+
+可以在`apis/Components.yaml`加上如下的代码
+```yaml
+responseRetCodeOnly:
+  schema:
+    type: object
+    properties:
+      RetCode:
+        type: integer
+        default: 0
+        description: 当RetCode为0时，代表该操作执行成功
+```
+
+在你的`apis/****.yaml`文档中可以如下引用
+
+```yaml
+tags:
+  - 新版QQ群
+summary: 修改单条群相关信息
+description: 修改单条群相关信息
+body:
+  required:
+    - Id
+  properties:
+    Id:
+      type: string
+      description: id
+responses:
+  '200':
+    $ref: '#/Components/responseRetCodeOnly'
+```
+
+有关比如返回公司信息，返回资源信息等的模板我已经写好了，可以不用复写，@我就好
+
+## 老项目迁移
+
 
 将如下的代码copy到项目的scripts/目录下（其他的目录可能需要修改下路径，因为路径是写死的）
 
@@ -253,12 +300,13 @@ apiObj.forEach(({
 ```
 
 
+
 ## 更新
 
 
 ### 2018.12.07 v1.4.3
 
-+ add: 增加check方法，固定返回字符串，如果是空字符串就是无错误消息，如果是有内容的字符串，就是错误信息，以;为分隔符串联
++ add: 增加check方法，返回字符串或者undefined，如果是空字符串就是无错误消息，如果是有内容的字符串，就是错误信息，以;为分隔符串联
 
 ### 2018.12.07 v1.4.2
 
