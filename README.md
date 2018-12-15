@@ -60,8 +60,7 @@ router.get('/api-docs', ss.genSwaggerRouter(apiJsonPath))
 
 
 友情提示 copy的话请去除注释
-整个json里面，必须存在的字段是body
-body里面，必须存在的字段是 properties
+
 ```json
 {
   "tags": [
