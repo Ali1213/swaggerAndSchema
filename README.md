@@ -4,47 +4,72 @@
 npm i swagger-and-schema --save
 ```
 
-## 常见问题即解决方法
+## 简单介绍
 
-1. 在正式环境中没有端口号的概念，路由不对
-    解决方法1： 在new new SwaggerAndSchema({host:xxx.com}), 
-    解决方法2： 在 router.get(apiJsonPath, ss.genApiJsonRouter(CONFIG.port)) 不传入 port 参数
+这个包是集成了两个功能
+
++ swagger文档生成，可以方便的通过url访问
++ 集成了接口输入和输出的效验功能
+
+ps: 输入和输出参数效验必须是json
+
+## 环境要求
+
+node.js
++ v6.0以上
 
 ## 快速使用
 
 ### 使用schema效验
 
+### 使用schema效验输入参数
+
 ```javascript
 
 const SwaggerAndSchema = require('swagger-and-schema')
 
-const ss = new SwaggerAndSchema({
-    // api.json文件夹所在地
-    // 如果符合目前项目目录设置，则不需要设置该值
-    apisDirPath: 'xxx',
-})
+// default: 当前项目下`configs/apis`
+// 如果不是该路径，则需传入参数`{apisDirPath: 'api的文件所在目录'}`
+const ss = new SwaggerAndSchema()
 
-// err为null时表示效验通过，否则则为数组，数组的每一项代表效验失败的结果
-// const err = ss.validate(params) 
-
-// 推荐下列方法
-// @return {string | undefined} string代表错误提示，如果有多条，以;相连， undefined代表效验通过
-const err = ss.check(params)
+/** 
+ * @params { Object } params 需要效验的参数对象
+ * @params { string? } actionName 默认值为params.Action; 本次请求的指定接口名称
+ * @return {string | undefined} string代表错误提示，undefined代表效验通过
+ */
+const err = ss.check(params, actionName)
 
 ```
 
+
+### 使用schema效验输出参数
+
+```javascript
+
+const SwaggerAndSchema = require('swagger-and-schema')
+
+// default: 当前项目下`configs/apis`
+// 如果不是该路径，则需传入参数`{apisDirPath: 'api的文件所在目录'}`
+const ss = new SwaggerAndSchema()
+
+
+
+/** 
+ * @params { Object } params 需要效验的参数对象
+ * @params { string? } actionName 默认值为params.Action; 本次请求的指定接口名称
+ * @return {string | undefined} string代表错误提示，undefined代表效验通过
+ */
+const err = ss.checkOutput(params, actionName)
+```
 
 ### 开启api文档
 
 ```javascript
 const SwaggerAndSchema = require('swagger-and-schema')
 
-var ss = new SwaggerAndSchema({
-    apisDirPath: 'xxx',
-    // api.json所在地
-    // 示例: path.join(__dirname, 'configs/apis')
-    // 如果符合目前项目目录设置，则不需要设置该值
-})
+// default: 当前项目下`configs/apis`
+// 如果不是该路径，则需传入参数`{apisDirPath: 'api的文件所在目录'}`
+var ss = new SwaggerAndSchema()
 
 const apiJsonPath = '/api-docs.json'
 // 生成 json 文件的路径
@@ -54,7 +79,7 @@ router.get(apiJsonPath, ss.genApiJsonRouter(CONFIG.port))
 router.get('/api-docs', ss.genSwaggerRouter(apiJsonPath))
 ```
 
-然后你就可以打开 项目路径，如`localhost:4040` + `/api-docs` 查看到swagger你的文档
+然后你就可以打开 项目路径，如`localhost:4040` + `/api-docs` 查看到swagger你的文档(请将端口号换成你自己的)
 
 ### api/json示例
 
@@ -152,27 +177,46 @@ router.get('/api-docs', ss.genSwaggerRouter(apiJsonPath))
 ```javascript
 const SwaggerAndSchema = require('swagger-and-schema')
 
-const ss = new SwaggerAndSchema({
-    // api.json文件夹所在地
-    // 示例: path.join(__dirname, 'configs/apis')
-    // 如果符合目前项目目录设置，则不需要设置该值
-    apisDirPath: 'xxx',
-})
+// default: 当前项目下`configs/apis`
+// 如果不是该路径，则需传入参数`{apisDirPath: 'api的文件所在目录'}`
+const ss = new SwaggerAndSchema()
 
+// 获取入参效验的schema文件
 const schema = ss.genSchema()
+
+// 获取出参效验的schema文件
+const schema = ss.genSchema('output')
+
 ```
 
 
 
 ## 进阶
 
-### components
+### `SwaggerAndSchema`类的参数详解
+
+在新建实例的时候`new SwaggerAndSchema(params)`,params对象有多个属性值
++ `swagger` swagger版本号,目前仅作为页面展示的作用
++ `version` api版本号，swagger官方文档是有多版本api文档的概念的，不过暂不支持，目前仅作为页面展示的作用
++ `title` 项目名称，页面展示的作用
++ `description` 项目描述，页面展示的作用
++ `hostname` hostname， *可能会在后续版本改动*
++ `port` 端口号: 项目启动的端口号, 推荐使用genApiJsonRouter(port)传入，*可能会在后续版本改动*
++ `title` 项目名称，页面展示的作用
++ `apiJsonPath` api路径，默认路径为`${当前项目路径}/configs/apis`
++ `needPrex` 是否需要前缀, 默认值为false, 详见api文档多层嵌套
++ `seq` 分隔符，windows系统默认为`\`, linux系统默认为`/`，详见api文档多层嵌套
+
+### components文件
+
+如果多个api的出参是一致的，每个api文档都写一遍是很烦人的，所以你需要用到公共文档
 
 目前版本代码是写死的,在`apis/Components.yaml` 或者是 `Components.json`文件中可以定义一些公共可复用的组件。
 
 举个例子：有很多借口的返回值只需要一个RetCode为0
 
 可以在`apis/Components.yaml`加上如下的代码
+
 ```yaml
 responseRetCodeOnly:
   schema:
@@ -204,6 +248,44 @@ responses:
 ```
 
 有关比如返回公司信息，返回资源信息等的模板我已经写好了，可以不用复写，@我就好
+
+
+### api文档多层嵌套
+
+目前的项目支持apis路径下有文档多层嵌套
+
+比如`apiJsonPath`为`configs/apis`,
+
+您可以使用`configs/api/v1/`放置v1版本的接口
+
+项目会去自动读取`configs/api`文件夹及其后代文件夹中所有的yaml和json文件
+
+读取完成之后，程序会在内存给每个转化完成的json文件一个唯一的`actionName`
+
+默认情况使用yaml或json文件中的属性`name`作为`actionName`如果没有，则以文件名作为`actionName`
+
+那么可能存在的问题
+```
+// 假设存在的文件名如下，就会出现冲突
+
+configs/api/v1/aaa.yaml
+configs/api/v2/aaa.yaml
+```
+
+所以引入了相关的配置属性
+
+默认:
+
++ configs/api/v1/aaa.yaml  -> `actionName`为`aaa`
+
+当`needPrex`设置为true时:
+
++ configs/api/v1/aaa.yaml  -> `actionName`为`v1/aaa`
+
+当`needPrex`设置为true时,并且`seq`为`-`:
+
++ configs/api/v1/aaa.yaml  -> `actionName`为`v1-aaa`
+
 
 ## 老项目迁移
 
@@ -298,10 +380,26 @@ apiObj.forEach(({
 
 ```
 
+## 使用小贴士
+
+### com
+
+
+## 常见问题即解决方法
+
+1. 在正式环境中没有端口号的概念，路由不对
++ 解决方法1： 在new new SwaggerAndSchema({host:xxx.com})
++ 解决方法2： 在 router.get(apiJsonPath, ss.genApiJsonRouter(CONFIG.port)) 不传入 port 参数
+
 
 
 ## 更新
 
+
+### 2018.12.15 v1.5.0
+
++ feature: 提供对输出参数效验的方法.
++ fixed: 公用组件Components的一些问题
 
 ### 2018.12.15 v1.4.6
 

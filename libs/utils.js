@@ -90,3 +90,71 @@ const importFilesFromPath = ({
 };
 
 exports.importFilesFromPath = importFilesFromPath;
+
+const genInputSchemas = ({ apiJsons } = {}) => apiJsons.reduce((prev, apiJson) => {
+  // eslint-disable-next-line no-param-reassign
+  prev[apiJson.name] = apiJson.content.body || {
+    required: [],
+    properties: {},
+  };
+  return prev;
+}, {});
+
+
+exports.genInputSchemas = genInputSchemas;
+
+
+const replaceRef = (schema, def) => JSON.parse(JSON.stringify(schema), (key, value) => {
+  if (key === '$ref') {
+    return def[value.substring(value.lastIndexOf('/') + 1)];
+  }
+  return value;
+});
+
+const encodeDefaultSchema = (apiJsons) => {
+  const d = apiJsons.find(item => item.name === 'Components');
+  return JSON.parse(JSON.stringify(d), (key, value) => {
+    if (key === '$ref') {
+      return d[value.substring(0, value.lastIndexOf('/'))];
+    }
+    return value;
+  });
+};
+
+const genOutPutSchemas = ({ apiJsons } = {}) => {
+  let defaultSchemas = encodeDefaultSchema(apiJsons);
+  const schema = {
+
+  };
+
+
+  apiJsons.forEach((apiJson) => {
+    if (apiJson.name === 'Components') {
+      defaultSchemas = apiJson.content;
+      return;
+    }
+
+    // if (apiJson.content.body) {
+    //   schema[apiJson.name] = {
+    //     input: apiJson.content.body,
+    //   };
+    // } else {
+    //   schema[apiJson.name] = {
+    //     required: [],
+    //     properties: {},
+    //   };
+    // }
+    if (apiJson.content.responses) {
+      schema[apiJson.name] = replaceRef(apiJson.content.responses, defaultSchemas)['200'].schema || {
+        required: [],
+        properties: {},
+      };
+    }
+  });
+  return {
+    defaultSchemas,
+    schema,
+  };
+};
+
+exports.genOutPutSchemas = genOutPutSchemas;

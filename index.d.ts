@@ -34,6 +34,7 @@ declare class SwaggerAndSchema {
     genSwaggerRouter(apiJsonPath?: string): router
     validate(params:any, actionName?: string, apisDirPath?: string): any
     check(params:any, actionName?: string, apisDirPath?: string): string | void
+    checkOutput(params:any, actionName?: string, apisDirPath?: string): string | void
 }
 
 

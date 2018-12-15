@@ -6,6 +6,8 @@ const swaggerHTML = require('./libs/swaggerHTML');
 
 const {
   importFilesFromPath,
+  genInputSchemas,
+  genOutPutSchemas,
 } = require('./libs/utils');
 
 /*
@@ -33,14 +35,6 @@ function parseBody(body) {
     schema: body,
   };
 }
-
-const getSchemas = ({ apiJsons } = {}) => apiJsons.reduce((prev, apiJson) => {
-  prev[apiJson.name] = apiJson.content.body || {
-    required: [],
-    properties: {},
-  };
-  return prev;
-}, {});
 
 
 function apiJsonToSwaggerJson({
@@ -120,17 +114,11 @@ const _check = (params, actionName, schema) => {
   if (typeof action !== 'string') {
     return 'Action not found';
   }
-
-  if (!schema) throw Error('schema must be init');
-  if (!schema[action]) {
-    return 'No Such Method';
-  }
-
   const ajv = new Ajv();
   const valid = ajv.validate(schema[action], params);
   let err;
   if (!valid) {
-    err = ajv.errors.map(item => item.message || '').join(';');
+    err = ajv.errorsText();
   }
   return err;
 };
@@ -171,12 +159,13 @@ class SwaggerAndSchema {
 
       needPrex,
       seq,
+    //   defaultSchemas,
       // 生成的apiJsons文件，同时用于生成swagger 和 schema效验
       // apiJsons,
       // 符合swagger规范的json文件
       // swaggerJson,
       // 符合schema效验的schema对象 api效验
-      // schema
+      // inputschema
       // 符合schema效验的schema对象，输出效验
       // outputschema
     };
@@ -194,9 +183,9 @@ class SwaggerAndSchema {
       this.apisDirPath = apisDirPath;
     }
 
-    this.genSchema(apisDirPath);
+    this.genSchema();
 
-    return _Validate(params, actionName, this.m.schema);
+    return _Validate(params, actionName, this.m.inputschema);
   }
 
   check(
@@ -208,9 +197,22 @@ class SwaggerAndSchema {
       this.apisDirPath = apisDirPath;
     }
 
-    this.genSchema(apisDirPath);
+    this.genSchema();
+    return _check(params, actionName, this.m.inputschema);
+  }
 
-    return _check(params, actionName, this.m.schema);
+  checkOutput(
+    params,
+    actionName,
+    apisDirPath,
+  ) {
+    if (apisDirPath) {
+      this.apisDirPath = apisDirPath;
+    }
+
+    this.genSchema('output');
+
+    return _check(params, actionName, this.m.outputschema);
   }
 
   genApiJsons() {
@@ -224,12 +226,25 @@ class SwaggerAndSchema {
     return this.m.apiJsons;
   }
 
-  genSchema() {
-    if (typeof this.m.schema !== 'object') {
-      const apiJsons = this.genApiJsons(this.m.apisDirPath);
-      this.m.schema = getSchemas({ apiJsons });
+  genSchema(type = 'input') {
+    if (type === 'input') {
+      if (typeof this.m.inputschema !== 'object') {
+        const apiJsons = this.genApiJsons(this.m.apisDirPath);
+        this.m.inputschema = genInputSchemas({ apiJsons });
+      }
+      return this.m.inputschema;
     }
-    return this.m.schema;
+
+    if (type === 'output') {
+      if (typeof this.m.outputschema !== 'object') {
+        const apiJsons = this.genApiJsons(this.m.apisDirPath);
+        const { defaultSchemas, schema } = genOutPutSchemas({ apiJsons });
+        this.m.outputschema = schema;
+        this.m.defaultSchemas = defaultSchemas;
+      }
+      return this.m.outputschema;
+    }
+    throw Error('type not match');
   }
 
   genApiJsonRouter(port) {
