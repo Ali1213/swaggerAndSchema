@@ -1,8 +1,12 @@
-const fs = require('fs');
+/* eslint-disable no-param-reassign */
+/* eslint-disable no-underscore-dangle */
 const path = require('path');
 const Ajv = require('ajv');
-const yaml = require('js-yaml');
-const swaggerHTML = require('./swaggerHTML');
+const swaggerHTML = require('./libs/swaggerHTML');
+
+const {
+  importFilesFromPath,
+} = require('./libs/utils');
 
 /*
  * parse api.json
@@ -38,27 +42,6 @@ const getSchemas = ({ apiJsons } = {}) => apiJsons.reduce((prev, apiJson) => {
   return prev;
 }, {});
 
-const getAllJsonPathFromPath = ({ apisDirPath } = {}) => {
-  const filenames = fs.readdirSync(apisDirPath);
-  return filenames.map((filename) => {
-    let content;
-    const fileType = path.extname(filename);
-    const filepath = path.join(apisDirPath, filename);
-    if (fileType === '.json') {
-      content = require(filepath);
-    } else if (fileType === '.yaml') {
-      content = yaml.safeLoad(fs.readFileSync(filepath, 'utf8'));
-    } else {
-      content = {};
-    }
-
-    const name = content.name || path.basename(filename, path.extname(filename));
-    return {
-      content,
-      name,
-    };
-  });
-};
 
 function apiJsonToSwaggerJson({
   swagger,
@@ -84,7 +67,7 @@ function apiJsonToSwaggerJson({
 
   const paths = apiJsons.reduce((prev, { content, name }) => {
     // default 'Components.json' is a model file
-    if (name == 'Components') {
+    if (name === 'Components') {
       swaggerJson.Components = content;
       return prev;
     }
@@ -170,6 +153,8 @@ class SwaggerAndSchema {
     basePath = '',
     apiJsonPath,
     apisDirPath = path.join(__dirname, '../../configs/apis'),
+    needPrex,
+    seq,
   } = {}) {
     this.m = {
       swagger,
@@ -183,12 +168,17 @@ class SwaggerAndSchema {
       basePath,
       apiJsonPath,
       apisDirPath,
+
+      needPrex,
+      seq,
       // 生成的apiJsons文件，同时用于生成swagger 和 schema效验
       // apiJsons,
       // 符合swagger规范的json文件
       // swaggerJson,
-      // 符合schema效验的schema文件
-      // scheme
+      // 符合schema效验的schema对象 api效验
+      // schema
+      // 符合schema效验的schema对象，输出效验
+      // outputschema
     };
     if (hostname) {
       this.m.host = port ? `${hostname}:${port}` : hostname;
@@ -206,7 +196,7 @@ class SwaggerAndSchema {
 
     this.genSchema(apisDirPath);
 
-    return _Validate(params, actionName, this.m.scheme);
+    return _Validate(params, actionName, this.m.schema);
   }
 
   check(
@@ -220,22 +210,26 @@ class SwaggerAndSchema {
 
     this.genSchema(apisDirPath);
 
-    return _check(params, actionName, this.m.scheme);
+    return _check(params, actionName, this.m.schema);
   }
 
   genApiJsons() {
     if (!Array.isArray(this.m.apiJsons)) {
-      this.m.apiJsons = getAllJsonPathFromPath({ apisDirPath: this.m.apisDirPath });
+      this.m.apiJsons = importFilesFromPath({
+        dirpath: this.m.apisDirPath,
+        needPrex: this.m.needPrex,
+        seq: this.m.seq,
+      });
     }
     return this.m.apiJsons;
   }
 
   genSchema() {
-    if (typeof this.m.scheme !== 'object') {
+    if (typeof this.m.schema !== 'object') {
       const apiJsons = this.genApiJsons(this.m.apisDirPath);
-      this.m.scheme = getSchemas({ apiJsons });
+      this.m.schema = getSchemas({ apiJsons });
     }
-    return this.m.scheme;
+    return this.m.schema;
   }
 
   genApiJsonRouter(port) {

@@ -11,6 +11,8 @@ interface Config {
     basePath?: string;
     apiJsonPath?: string;
     apisDirPath?: string;
+    needPrex?: boolean;
+    seq?: string;
 }
 
 interface cacheArgs extends Config {

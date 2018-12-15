@@ -1,4 +1,4 @@
-const swaggerHTML = apiPath =>`
+const swaggerHTML = apiPath => `
 
 <!DOCTYPE html>
 <html lang="en">
@@ -91,6 +91,6 @@ const swaggerHTML = apiPath =>`
 
 </html>
 
-`
+`;
 
-module.exports = swaggerHTML
+module.exports = swaggerHTML;
