@@ -17,11 +17,29 @@ const {
  * @returns { object } r
  * @returns { string }
  */
-function parseBody(body) {
+// function parseBody(body) {
+//   if (!body) {
+//     return {
+//       in: 'body',
+//       name: 'body',
+//       required: false,
+//     };
+//   }
+//   if (!Array.isArray(body.required)) {
+//     body.required = [];
+//   }
+//   return {
+//     in: 'body',
+//     name: 'body',
+//     required: true,
+//     schema: body,
+//   };
+// }
+
+
+function parseReqBody(body) {
   if (!body) {
     return {
-      in: 'body',
-      name: 'body',
       required: false,
     };
   }
@@ -29,16 +47,35 @@ function parseBody(body) {
     body.required = [];
   }
   return {
-    in: 'body',
-    name: 'body',
     required: true,
-    schema: body,
+    content: {
+      'application/json': {
+        schema: body,
+      },
+    },
   };
 }
 
 
+function parseResBody(response) {
+  return Object.keys(response).reduce((prev, value) => {
+    const resSchema = response[value].schema || {};
+    delete response[value].schema;
+    prev[value] = {
+      content: {
+        'application/json': {
+          schema: resSchema,
+        },
+      },
+      ...response[value],
+    };
+    return prev;
+  }, {});
+}
+
+
 function apiJsonToSwaggerJson({
-  swagger,
+  openapi,
   version,
   title,
   description,
@@ -48,7 +85,7 @@ function apiJsonToSwaggerJson({
   apiJsons,
 } = {}) {
   const swaggerJson = {
-    swagger,
+    openapi,
     info: {
       version,
       title,
@@ -72,14 +109,15 @@ function apiJsonToSwaggerJson({
         tags: content.tags,
         summary: content.summary || '',
         description: content.description || '',
-        consumes: ['application/json'],
-        produces: ['application/json'],
-        parameters: [parseBody(content.body)], // 目前只支持body
-        responses: content.responses || {
+        // consumes: ['application/json'],
+        // produces: ['application/json'],
+        // parameters: [parseBody(content.body)], // 目前只支持body
+        requestBody: parseReqBody(content.body),
+        responses: parseResBody(content.responses || {
           200: {
             description: '请求成功',
           },
-        },
+        }),
       },
     };
     return prev;
@@ -130,7 +168,7 @@ const _genSwaggerRouter = apiJsonPath => (_, res) => {
 
 class SwaggerAndSchema {
   constructor({
-    swagger = '2.0',
+    openapi = '3.0.0',
     version = '1.0.0',
     title = '测试项目',
     description = '项目描述示例',
@@ -145,7 +183,7 @@ class SwaggerAndSchema {
     seq,
   } = {}) {
     this.m = {
-      swagger,
+      openapi,
       version,
       title,
       description,
@@ -159,7 +197,7 @@ class SwaggerAndSchema {
 
       needPrex,
       seq,
-    //   defaultSchemas,
+      //   defaultSchemas,
       // 生成的apiJsons文件，同时用于生成swagger 和 schema效验
       // apiJsons,
       // 符合swagger规范的json文件

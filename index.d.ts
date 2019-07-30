@@ -1,6 +1,6 @@
 
 interface Config {
-    swagger?: string;
+    openapi?: string;
     version?: string;
     title?: string;
     description?: string;
