@@ -1,3 +1,9 @@
+const fs = require('fs');
+const path = require('path');
+
+const uiFile = fs.readFileSync(path.join(__dirname, 'swagger-ui.css'), 'utf-8');
+const uiBundle = fs.readFileSync(path.join(__dirname, 'swagger-ui-bundle.js'), 'utf-8');
+const uiStandalone = fs.readFileSync(path.join(__dirname, 'swagger-ui-standalone-preset.js'), 'utf-8');
 
 const swaggerHTML = apiPath => `
 <!DOCTYPE html>
@@ -5,7 +11,9 @@ const swaggerHTML = apiPath => `
   <head>
     <meta charset="UTF-8">
     <title>Swagger UI</title>
-    <link href="https://cdn.bootcss.com/swagger-ui/3.23.1/swagger-ui.css" rel="stylesheet">
+    <style  type="text/css">
+      ${uiFile}
+    </style>
     <link rel="icon" type="image/png" href="./favicon-32x32.png" sizes="32x32" />
     <link rel="icon" type="image/png" href="./favicon-16x16.png" sizes="16x16" />
     <style>
@@ -31,8 +39,12 @@ const swaggerHTML = apiPath => `
 
   <body>
     <div id="swagger-ui"></div>
-    <script src="https://cdn.bootcss.com/swagger-ui/3.23.1/swagger-ui-bundle.js"></script>
-    <script src="https://cdn.bootcss.com/swagger-ui/3.23.1/swagger-ui-standalone-preset.js"></script>
+    <script type="text/javascript">
+      ${uiBundle}
+    </script>
+    <script type="text/javascript">
+      ${uiStandalone}
+    </script>
 
     <script>
     window.onload = function() {
