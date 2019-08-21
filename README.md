@@ -392,6 +392,11 @@ apiObj.forEach(({
 
 ## 更新
 
+### 2019.08.21 v2.1.0
+
++ feature
+  - 将schema提前加载， 优化性能
+
 ### 2019.08.13 v2.0.1
 
 + feature

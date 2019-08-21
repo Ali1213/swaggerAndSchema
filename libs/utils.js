@@ -1,6 +1,38 @@
+/* eslint-disable no-param-reassign */
+/* eslint-disable max-len */
 const fs = require('fs');
 const path = require('path');
 const yaml = require('js-yaml');
+
+const encodeDefault = definition => JSON.parse(JSON.stringify(definition), (key, value) => {
+  if (key === '$ref') {
+    return definition[value.substring(0, value.lastIndexOf('/'))];
+  }
+  return value;
+});
+// /**
+//  * @isFile 判断路径是否是文件
+//  *
+//  * @params { string } filepath
+//  *
+//  * @returns { boolean } 是否是文件
+//  */
+// const isFile = (filepath) => {
+//   const stats = fs.statSync(filepath);
+//   return stats.isFile();
+// };
+
+// /**
+//  * @isDirectory 判断路径是否是文件夹
+//  *
+//  * @params { string } filepath
+//  *
+//  * @returns { boolean } 是否是文件夹
+//  */
+// const isDirectory = (filepath) => {
+//   const stats = fs.statSync(filepath);
+//   return stats.isDirectory();
+// };
 
 /**
   * 递归读取文件夹目录
@@ -96,36 +128,70 @@ const importFilesFromPath = ({
 
 exports.importFilesFromPath = importFilesFromPath;
 
-const genInputSchemas = ({ apiJsons } = {}) => apiJsons.reduce((prev, apiJson) => {
+/**
+ * @deprecated
+ * genInputSchemas 生成api入参的schema
+ */
+const genInputSchemas = ({ apiJsons, definitions = [] } = {}) => apiJsons.reduce((prev, apiJson) => {
+  if (definitions.includes(apiJson.name)) {
+    prev.defaultSchemas[apiJson.name] = encodeDefault(apiJson);
+    return prev;
+  }
   // eslint-disable-next-line no-param-reassign
-  prev[apiJson.name] = apiJson.content.body || {
+  prev.schemas[apiJson.name] = apiJson.content.body || {
     required: [],
     properties: {},
   };
   return prev;
-}, {});
-
+}, { defaultSchemas: {}, schemas: {} });
 
 exports.genInputSchemas = genInputSchemas;
 
 
-const replaceRef = (schema, def) => JSON.parse(JSON.stringify(schema), (key, value) => {
-  if (key === '$ref') {
-    return def[value.substring(value.lastIndexOf('/') + 1)];
+/**
+ * genAjvSchema 生成api入参的schema
+ */
+const genAjvSchemas = ({ apiJsons, definitions = [] } = {}) => apiJsons.reduce((prev, apiJson) => {
+  if (definitions.includes(apiJson.name)) {
+    prev.defaultSchemas.push({
+      $id: apiJson.name,
+      definitions: encodeDefault(apiJson),
+    });
+    return prev;
   }
-  return value;
-});
+
+
+  // eslint-disable-next-line no-param-reassign
+  prev.schemas.push({
+    $id: apiJson.name,
+    type: 'object',
+    ...(apiJson.content.body || {
+      required: [],
+      properties: {},
+    }),
+  });
+  return prev;
+}, { defaultSchemas: [], schemas: [] });
+
+exports.genAjvSchemas = genAjvSchemas;
+
+
+// const replaceRef = (schema, def) => JSON.parse(JSON.stringify(schema), (key, value) => {
+//   if (key === '$ref') {
+//     return def[value.substring(value.lastIndexOf('/') + 1)];
+//   }
+//   return value;
+// });
+
 
 const encodeDefaultSchema = (apiJsons) => {
   const d = apiJsons.find(item => item.name === 'Components');
-  return JSON.parse(JSON.stringify(d), (key, value) => {
-    if (key === '$ref') {
-      return d[value.substring(0, value.lastIndexOf('/'))];
-    }
-    return value;
-  });
+  return encodeDefault(d);
 };
 
+/**
+ * @deprecated
+ */
 const genOutPutSchemas = ({ apiJsons } = {}) => {
   let defaultSchemas = encodeDefaultSchema(apiJsons);
   const schema = {
@@ -139,7 +205,7 @@ const genOutPutSchemas = ({ apiJsons } = {}) => {
       return;
     }
     if (apiJson.content.responses) {
-      schema[apiJson.name] = replaceRef(apiJson.content.responses, defaultSchemas)['200'].schema || {
+      schema[apiJson.name] = apiJson.content.responses['200'].schema || {
         required: [],
         properties: {},
       };
@@ -152,3 +218,28 @@ const genOutPutSchemas = ({ apiJsons } = {}) => {
 };
 
 exports.genOutPutSchemas = genOutPutSchemas;
+
+
+const genOutPutAjvSchemas = ({ apiJsons, definitions = [] } = {}) => apiJsons.reduce((prev, apiJson) => {
+  if (definitions.includes(apiJson.name)) {
+    prev.defaultSchemas.push({
+      $id: apiJson.name,
+      definitions: encodeDefault(apiJson),
+    });
+    return prev;
+  }
+
+  if (apiJson.content.responses) {
+    prev.schemas.push({
+      $id: apiJson.name,
+      type: 'object',
+      ...apiJson.content.responses['200'].schema || {
+        required: [],
+        properties: {},
+      },
+    });
+  }
+  return prev;
+}, { defaultSchemas: [], schemas: [] });
+
+exports.genOutPutAjvSchemas = genOutPutAjvSchemas;

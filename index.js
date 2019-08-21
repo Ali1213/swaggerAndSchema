@@ -6,8 +6,10 @@ const swaggerHTML = require('./libs/swaggerHTML');
 
 const {
   importFilesFromPath,
-  genInputSchemas,
-  genOutPutSchemas,
+  // genInputSchemas,
+  genAjvSchemas,
+  genOutPutAjvSchemas,
+  // genOutPutSchemas,
 } = require('./libs/utils');
 
 /*
@@ -127,19 +129,13 @@ function apiJsonToSwaggerJson({
   return swaggerJson;
 }
 
-const _Validate = (params, actionName, schema) => {
+const _Validate = (params, actionName, ajv) => {
   const action = actionName || params.Action;
   if (typeof action !== 'string') {
     return 'Action not found';
   }
 
-  if (!schema) throw Error('schema must be init');
-  if (!schema[action]) {
-    return 'No Such Method';
-  }
-
-  const ajv = new Ajv();
-  const valid = ajv.validate(schema[action], params);
+  const valid = ajv.validate(action, params);
   let error;
   if (!valid) {
     error = ajv.errors;
@@ -147,13 +143,12 @@ const _Validate = (params, actionName, schema) => {
   return error;
 };
 
-const _check = (params, actionName, schema) => {
+const _check = (params, actionName, ajv) => {
   const action = actionName || params.Action;
   if (typeof action !== 'string') {
     return 'Action not found';
   }
-  const ajv = new Ajv();
-  const valid = ajv.validate(schema[action], params);
+  const valid = ajv.validate(action, params);
   let err;
   if (!valid) {
     err = ajv.errorsText();
@@ -206,6 +201,10 @@ class SwaggerAndSchema {
       // inputschema
       // 符合schema效验的schema对象，输出效验
       // outputschema
+
+      // 挂载ajv对象
+      // inputAjv
+      // outputAjv
     };
     if (hostname) {
       this.m.host = port ? `${hostname}:${port}` : hostname;
@@ -223,7 +222,7 @@ class SwaggerAndSchema {
 
     this.genSchema();
 
-    return _Validate(params, actionName, this.m.inputschema);
+    return _Validate(params, actionName, this.m.inputAjv);
   }
 
   check(
@@ -236,9 +235,14 @@ class SwaggerAndSchema {
     }
 
     this.genSchema();
-    return _check(params, actionName, this.m.inputschema);
+    // return _check(params, actionName, this.m.inputschema);
+    return _check(params, actionName, this.m.inputAjv);
   }
 
+  /**
+   * @checkOutput 检查输出的参数
+   *
+   */
   checkOutput(
     params,
     actionName,
@@ -250,7 +254,7 @@ class SwaggerAndSchema {
 
     this.genSchema('output');
 
-    return _check(params, actionName, this.m.outputschema);
+    return _check(params, actionName, this.m.outputAjv);
   }
 
   genApiJsons() {
@@ -264,23 +268,33 @@ class SwaggerAndSchema {
     return this.m.apiJsons;
   }
 
+  /**
+   * @genSchema 生成schema文件
+   * 通常来说， 生成这种文件就是需要进行schema效验
+   * 所以在这一步进行ajv的加载
+   *
+   */
   genSchema(type = 'input') {
     if (type === 'input') {
-      if (typeof this.m.inputschema !== 'object') {
+      if (!this.m.inputAjv) {
         const apiJsons = this.genApiJsons(this.m.apisDirPath);
-        this.m.inputschema = genInputSchemas({ apiJsons });
+        const { defaultSchemas, schemas } = genAjvSchemas({ apiJsons, definitions: ['Components'] });
+        this.m.inputAjv = new Ajv({
+          schemas: schemas.concat(defaultSchemas),
+        });
       }
-      return this.m.inputschema;
+      return this.m.inputAjv;
     }
 
     if (type === 'output') {
-      if (typeof this.m.outputschema !== 'object') {
+      if (!this.m.outputAjv) {
         const apiJsons = this.genApiJsons(this.m.apisDirPath);
-        const { defaultSchemas, schema } = genOutPutSchemas({ apiJsons });
-        this.m.outputschema = schema;
-        this.m.defaultSchemas = defaultSchemas;
+        const { defaultSchemas, schemas } = genOutPutAjvSchemas({ apiJsons, definitions: ['Components'] });
+        this.m.outputAjv = new Ajv({
+          schemas: schemas.concat(defaultSchemas),
+        });
       }
-      return this.m.outputschema;
+      return this.m.outputAjv;
     }
     throw Error('type not match');
   }
