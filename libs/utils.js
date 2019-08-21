@@ -9,18 +9,22 @@ const yaml = require('js-yaml');
   * TODO: node v10.10版本提供了readdir里面有参数withFileTypes，但考虑到现在的node版本基本上会比较低，所以先用stat实现
  */
 const readFilesRecur = (dirpath) => {
-  let files = [];
-  const f = fs.readdirSync(dirpath);
-  // eslint-disable-next-line no-loop-func
-  f.forEach((file) => {
-    const filepath = path.join(dirpath, file);
-    const stats = fs.statSync(filepath);
-    if (stats.isDirectory()) {
-      files = files.concat(readFilesRecur(filepath));
-    } else if (stats.isFile()) {
-      files.push(filepath);
-    }
-  });
+  const files = [];
+  const dirs = [dirpath];
+
+  while (dirs.length > 0) {
+    const dir = dirs.shift();
+    const f = fs.readdirSync(dir);
+    f.forEach((file) => {
+      const filepath = path.join(dir, file);
+      const stats = fs.statSync(filepath);
+      if (stats.isDirectory()) {
+        dirs.push(filepath);
+      } else if (stats.isFile()) {
+        files.push(filepath);
+      }
+    });
+  }
   return files;
 };
 
@@ -59,6 +63,7 @@ const addDocs = (content, dirpath, filepath, docs, needPrex = false, seq = path.
     content,
   });
 };
+
 
 /**
  * 读取文件内容
@@ -133,17 +138,6 @@ const genOutPutSchemas = ({ apiJsons } = {}) => {
       defaultSchemas = apiJson.content;
       return;
     }
-
-    // if (apiJson.content.body) {
-    //   schema[apiJson.name] = {
-    //     input: apiJson.content.body,
-    //   };
-    // } else {
-    //   schema[apiJson.name] = {
-    //     required: [],
-    //     properties: {},
-    //   };
-    // }
     if (apiJson.content.responses) {
       schema[apiJson.name] = replaceRef(apiJson.content.responses, defaultSchemas)['200'].schema || {
         required: [],
