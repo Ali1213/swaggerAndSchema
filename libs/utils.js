@@ -155,7 +155,7 @@ const genAjvSchemas = ({ apiJsons, definitions = [] } = {}) => apiJsons.reduce((
   if (definitions.includes(apiJson.name)) {
     prev.defaultSchemas.push({
       $id: apiJson.name,
-      definitions: encodeDefault(apiJson),
+      [apiJson.name]: encodeDefault(apiJson),
     });
     return prev;
   }
@@ -224,7 +224,7 @@ const genOutPutAjvSchemas = ({ apiJsons, definitions = [] } = {}) => apiJsons.re
   if (definitions.includes(apiJson.name)) {
     prev.defaultSchemas.push({
       $id: apiJson.name,
-      definitions: encodeDefault(apiJson),
+      [apiJson.name]: encodeDefault(apiJson),
     });
     return prev;
   }
