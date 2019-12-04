@@ -156,9 +156,9 @@ const _check = (params, actionName, ajv) => {
   return err;
 };
 
-const _genSwaggerRouter = apiJsonPath => (_, res) => {
+const _genSwaggerRouter = (apiJsonPath, htmlTitle) => (_, res) => {
   res.setHeader('Content-Type', 'text/html');
-  res.send(swaggerHTML(apiJsonPath));
+  res.send(swaggerHTML(apiJsonPath, htmlTitle));
 };
 
 class SwaggerAndSchema {
@@ -176,6 +176,7 @@ class SwaggerAndSchema {
     apisDirPath = path.join(__dirname, '../../configs/apis'),
     needPrex,
     seq,
+    htmlTitle,
   } = {}) {
     this.m = {
       openapi,
@@ -189,9 +190,9 @@ class SwaggerAndSchema {
       basePath,
       apiJsonPath,
       apisDirPath,
-
       needPrex,
       seq,
+      htmlTitle,
       //   defaultSchemas,
       // 生成的apiJsons文件，同时用于生成swagger 和 schema效验
       // apiJsons,
@@ -323,7 +324,7 @@ class SwaggerAndSchema {
     if (apiJsonPath) {
       this.m.apiJsonPath = apiJsonPath;
     }
-    return _genSwaggerRouter(this.m.apiJsonPath);
+    return _genSwaggerRouter(this.m.apiJsonPath, this.m.htmlTitle);
   }
 }
 

@@ -13,6 +13,7 @@ interface Config {
     apisDirPath?: string;
     needPrex?: boolean;
     seq?: string;
+    htmlTitle?: string;
 }
 
 interface cacheArgs extends Config {
@@ -22,7 +23,7 @@ interface cacheArgs extends Config {
 }
 
 
-type router = (req:any,res:any) => void
+type router = (req: any, res: any) => void
 
 
 // type validErr = schemaErr | string | void;
@@ -32,9 +33,9 @@ declare class SwaggerAndSchema {
     m: cacheArgs;
     genApiJsonRouter(port?: string): router
     genSwaggerRouter(apiJsonPath?: string): router
-    validate(params:any, actionName?: string, apisDirPath?: string): any
-    check(params:any, actionName?: string, apisDirPath?: string): string | void
-    checkOutput(params:any, actionName?: string, apisDirPath?: string): string | void
+    validate(params: any, actionName?: string, apisDirPath?: string): any
+    check(params: any, actionName?: string, apisDirPath?: string): string | void
+    checkOutput(params: any, actionName?: string, apisDirPath?: string): string | void
 }
 
 
