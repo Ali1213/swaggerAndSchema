@@ -5,12 +5,12 @@ const uiFile = fs.readFileSync(path.join(__dirname, 'swagger-ui.css'), 'utf-8');
 const uiBundle = fs.readFileSync(path.join(__dirname, 'swagger-ui-bundle.js'), 'utf-8');
 const uiStandalone = fs.readFileSync(path.join(__dirname, 'swagger-ui-standalone-preset.js'), 'utf-8');
 
-const swaggerHTML = apiPath => `
+const swaggerHTML = (apiPath, htmlTitle = 'Swagger UI') => `
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8">
-    <title>Swagger UI</title>
+    <title>${htmlTitle}</title>
     <style  type="text/css">
       ${uiFile}
     </style>
