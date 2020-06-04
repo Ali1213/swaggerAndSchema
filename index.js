@@ -12,32 +12,6 @@ const {
   // genOutPutSchemas,
 } = require('./libs/utils');
 
-/*
- * parse api.json
- * @params { object } body
- *
- * @returns { object } r
- * @returns { string }
- */
-// function parseBody(body) {
-//   if (!body) {
-//     return {
-//       in: 'body',
-//       name: 'body',
-//       required: false,
-//     };
-//   }
-//   if (!Array.isArray(body.required)) {
-//     body.required = [];
-//   }
-//   return {
-//     in: 'body',
-//     name: 'body',
-//     required: true,
-//     schema: body,
-//   };
-// }
-
 
 function parseReqBody(body) {
   if (!body) {
@@ -144,20 +118,22 @@ const _Validate = (params, actionName, ajv) => {
 };
 
 
-const _ValidateConvert = (params, actionName, schema, convertParams = function () { }) => {
+const _ValidateConvert = (params, actionName, schemas, ajv, convertParams = function () { }) => {
   const action = actionName || params.Action;
   if (typeof action !== 'string') {
     return 'Action not found';
   }
 
-  if (!schema) throw Error('schema must be init');
-  if (!schema[action]) {
-    return 'No Such Method';
+  let content = schemas.find(item => item.name === action);
+
+
+  if (content) {
+    content = content.content.body;
   }
 
-  const ajv = new Ajv();
-  convertParams(params, schema[action].properties);
-  const valid = ajv.validate(schema[action], params);
+  convertParams(params, content);
+
+  const valid = ajv.validate(action, params);
   let error;
   if (!valid) {
     error = ajv.errors;
@@ -221,7 +197,7 @@ class SwaggerAndSchema {
       // 符合swagger规范的json文件
       // swaggerJson,
       // 符合schema效验的schema对象 api效验
-      // inputschema
+      // inputschema,
       // 符合schema效验的schema对象，输出效验
       // outputschema
 
@@ -245,8 +221,7 @@ class SwaggerAndSchema {
     }
 
     this.genSchema();
-
-    return _ValidateConvert(params, actionName, this.m.inputschema, convertParams);
+    return _ValidateConvert(params, actionName, this.m.inputschema, this.m.inputAjv, convertParams);
   }
 
   validate(
@@ -273,7 +248,6 @@ class SwaggerAndSchema {
     }
 
     this.genSchema();
-    // return _check(params, actionName, this.m.inputschema);
     return _check(params, actionName, this.m.inputAjv);
   }
 
@@ -316,6 +290,7 @@ class SwaggerAndSchema {
     if (type === 'input') {
       if (!this.m.inputAjv) {
         const apiJsons = this.genApiJsons(this.m.apisDirPath);
+        this.m.inputschema = apiJsons;
         const { defaultSchemas, schemas } = genAjvSchemas({ apiJsons, definitions: ['Components'] });
         this.m.inputAjv = new Ajv({
           schemas: schemas.concat(defaultSchemas),
