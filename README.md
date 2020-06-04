@@ -392,6 +392,12 @@ apiObj.forEach(({
 
 ## 更新
 
+
+### 2020.06.04 v2.1.3
+
++ feature
+  - 增加validateWithHook方法，提供钩子去根据schema转化传入参数的方法
+
 ### 2019.12.04 v2.1.2
 
 + feature

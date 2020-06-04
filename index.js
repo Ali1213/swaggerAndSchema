@@ -143,6 +143,28 @@ const _Validate = (params, actionName, ajv) => {
   return error;
 };
 
+
+const _ValidateConvert = (params, actionName, schema, convertParams = function () { }) => {
+  const action = actionName || params.Action;
+  if (typeof action !== 'string') {
+    return 'Action not found';
+  }
+
+  if (!schema) throw Error('schema must be init');
+  if (!schema[action]) {
+    return 'No Such Method';
+  }
+
+  const ajv = new Ajv();
+  convertParams(params, schema[action].properties);
+  const valid = ajv.validate(schema[action], params);
+  let error;
+  if (!valid) {
+    error = ajv.errors;
+  }
+  return error;
+};
+
 const _check = (params, actionName, ajv) => {
   const action = actionName || params.Action;
   if (typeof action !== 'string') {
@@ -210,6 +232,21 @@ class SwaggerAndSchema {
     if (hostname) {
       this.m.host = port ? `${hostname}:${port}` : hostname;
     }
+  }
+
+  validateWithHook(
+    params,
+    actionName,
+    apisDirPath,
+    convertParams,
+  ) {
+    if (apisDirPath) {
+      this.apisDirPath = apisDirPath;
+    }
+
+    this.genSchema();
+
+    return _ValidateConvert(params, actionName, this.m.inputschema, convertParams);
   }
 
   validate(
